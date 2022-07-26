@@ -61,7 +61,7 @@ def edit_distance(list1, list2):
     """
     m = len(list1)
     n = len(list2)
-    data = [[0 for col in range(n + 1)] for row in range(m + 1)]
+    data = [[0 for _ in range(n + 1)] for _ in range(m + 1)]
     for col in range(n + 1):
         data[0][col] = col
     for row in range(m + 1):
@@ -90,13 +90,10 @@ def longest_match(list1, list2):
     """
     m = len(list1)
     n = len(list2)
-    data = [[0 for col in range(n + 1)] for row in range(m + 1)]
+    data = [[0 for _ in range(n + 1)] for _ in range(m + 1)]
     for a in range(1, m + 1):
         for b in range(1, n + 1):
-            if list1[a - 1] == list2[b - 1]:
-                data[a][b] = 1 + data[a - 1][b - 1]
-            else:
-                data[a][b] = 0
+            data[a][b] = 1 + data[a - 1][b - 1] if list1[a - 1] == list2[b - 1] else 0
     maxes = [max(row) for row in data]
     return max(maxes)
 
@@ -116,10 +113,14 @@ def prefix_match(list1, list2):
     >>> prefix_match([1, 2, 3, 4], [1, 2, 4, 8])
     2
     """
-    for i in range(min(len(list1), len(list2)), 0, -1):
-        if list1[:i] == list2[:i]:
-            return i
-    return 0
+    return next(
+        (
+            i
+            for i in range(min(len(list1), len(list2)), 0, -1)
+            if list1[:i] == list2[:i]
+        ),
+        0,
+    )
 
 
 def suffix_match(list1, list2):
@@ -136,10 +137,14 @@ def suffix_match(list1, list2):
     >>> suffix_match([1, 2, 3, 4], [1, 2, 4, 8])
     0
     """
-    for i in range(min(len(list1), len(list2)), 0, -1):
-        if list1[-i:] == list2[-i:]:
-            return i
-    return 0
+    return next(
+        (
+            i
+            for i in range(min(len(list1), len(list2)), 0, -1)
+            if list1[-i:] == list2[-i:]
+        ),
+        0,
+    )
 
 
 def scaled_edit_distance_match(list1, list2):
@@ -207,11 +212,10 @@ def _sounds_like_score(text1, text2):
     spelling or their phonetics. The higher this is, the more likely
     it is that one is a 'pun' on the other.
     """
-    result = max(
+    return max(
         combined_score(text1.replace(' ', ''), text2.replace(' ', '')),
         combined_score(get_phonetic(text1), get_phonetic(text2)),
     )
-    return result
 
 
 def sounds_like_score(target, clue):
@@ -226,9 +230,7 @@ def sounds_like_score(target, clue):
     >>> sounds_like_score('fish', 'chips')
     0.08333333333333333
     """
-    subscores = []
-    for word in clue.split():
-        subscores.append(_sounds_like_score(target, word))
+    subscores = [_sounds_like_score(target, word) for word in clue.split()]
     scores = [_sounds_like_score(target, clue), sum(subscores) / len(subscores)]
     return max(scores)
 

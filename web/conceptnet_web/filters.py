@@ -143,11 +143,10 @@ def describe_sources(sources, specific=True):
     if omcs_contributors:
         if specific:
             if omcs_count > MAX_INDIVIDUALS:
-                omcs_contributors.append("{} more".format(omcs_count - MAX_INDIVIDUALS))
+                omcs_contributors.append(f"{omcs_count - MAX_INDIVIDUALS} more")
 
-            omcs_str = '<a href="/s/activity/omcs">Open Mind Common Sense</a> contributors {}'.format(
-                oxford_comma(omcs_contributors)
-            )
+            omcs_str = f'<a href="/s/activity/omcs">Open Mind Common Sense</a> contributors {oxford_comma(omcs_contributors)}'
+
             source_chunks.append(omcs_str)
         else:
             source_chunks.append(
@@ -155,15 +154,11 @@ def describe_sources(sources, specific=True):
             )
     if ptt_count:
         if specific:
-            if ptt_count == 1:
-                count_str = "a player"
-            else:
-                count_str = "{} players".format(ptt_count)
+            count_str = "a player" if ptt_count == 1 else f"{ptt_count} players"
             source_chunks.append(
-                '{} of the <a href="/s/contributor/petgame">PTT Pet Game</a>'.format(
-                    count_str
-                )
+                f'{count_str} of the <a href="/s/contributor/petgame">PTT Pet Game</a>'
             )
+
         else:
             source_chunks.append(
                 'the <a href="/s/contributor/petgame">PTT Pet Game</a>'
@@ -171,25 +166,19 @@ def describe_sources(sources, specific=True):
 
     if nadya_count:
         if specific:
-            if nadya_count == 1:
-                count_str = "a player"
-            else:
-                count_str = "{} players".format(nadya_count)
+            count_str = "a player" if nadya_count == 1 else f"{nadya_count} players"
             source_chunks.append(
-                '{} of <a href="/s/activity/omcs/nadya.jp">nadya.jp</a>'.format(
-                    count_str
-                )
+                f'{count_str} of <a href="/s/activity/omcs/nadya.jp">nadya.jp</a>'
             )
+
         else:
             source_chunks.append('<a href="/s/activity/omcs/nadya.jp">nadya.jp</a>')
 
     source_chunks.extend(sorted(more_sources))
     if len(source_chunks) == 1:
-        source_markup = "<strong>Source:</strong> {}".format(source_chunks[0])
+        source_markup = f"<strong>Source:</strong> {source_chunks[0]}"
     else:
-        source_markup = "<strong>Sources:</strong> {}".format(
-            oxford_comma(source_chunks)
-        )
+        source_markup = f"<strong>Sources:</strong> {oxford_comma(source_chunks)}"
     return Markup(source_markup)
 
 

@@ -82,9 +82,7 @@ def gin_indexable_edge(edge):
         ...
     }
     """
-    gin_edge = {}
-    gin_edge['uri'] = edge['uri']
-    gin_edge['start'] = uri_prefixes(edge['start'])
+    gin_edge = {'uri': edge['uri'], 'start': uri_prefixes(edge['start'])}
     gin_edge['end'] = uri_prefixes(edge['end'])
     gin_edge['rel'] = uri_prefixes(edge['rel'])
     gin_edge['dataset'] = uri_prefixes(edge['dataset'])
@@ -106,12 +104,12 @@ def assertions_to_sql_csv(msgpack_filename, output_dir):
     to the order of the table columns defined in schema.py.
     """
     # Construct the filenames of the CSV files, one per table
-    output_nodes = output_dir + '/nodes.csv'
-    output_edges = output_dir + '/edges.csv'
-    output_relations = output_dir + '/relations.csv'
-    output_sources = output_dir + '/sources.csv'
-    output_features = output_dir + '/edge_features.csv'
-    output_edges_gin = output_dir + '/edges_gin.csv'
+    output_nodes = f'{output_dir}/nodes.csv'
+    output_edges = f'{output_dir}/edges.csv'
+    output_relations = f'{output_dir}/relations.csv'
+    output_sources = f'{output_dir}/sources.csv'
+    output_features = f'{output_dir}/edge_features.csv'
+    output_edges_gin = f'{output_dir}/edges_gin.csv'
 
     # We can't rely on Postgres to assign IDs, because we need to know the
     # IDs to refer to them _before_ they're in Postgres. So we track our own
@@ -124,9 +122,7 @@ def assertions_to_sql_csv(msgpack_filename, output_dir):
     # These are three files that we will write incrementally as we iterate
     # through the edges. The syntax restrictions on 'with' leave me with no
     # way to format this that satisfies my style checker and auto-formatter.
-    with open(output_edges, 'w', encoding='utf-8') as edge_file,\
-         open(output_edges_gin, 'w', encoding='utf-8') as edge_gin_file,\
-         open(output_features, 'w', encoding='utf-8') as feature_file:
+    with open(output_edges, 'w', encoding='utf-8') as edge_file, open(output_edges_gin, 'w', encoding='utf-8') as edge_gin_file, open(output_features, 'w', encoding='utf-8') as feature_file:
         for assertion in read_msgpack_stream(msgpack_filename):
             # Assertions are supposed to be unique. If they're not, we should
             # find out and the build should fail.
@@ -198,16 +194,11 @@ def assertions_to_sql_csv(msgpack_filename, output_dir):
             # Write the feature data, the 'direction' (forward, backward, or
             # symmetric), and the edge ID to the feature table.
             if assertion['rel'] in SYMMETRIC_RELATIONS:
-                for start_p_idx in start_p_indices:
-                    features.append((0, start_p_idx))
-                for end_p_idx in end_p_indices:
-                    features.append((0, end_p_idx))
+                features.extend((0, start_p_idx) for start_p_idx in start_p_indices)
+                features.extend((0, end_p_idx) for end_p_idx in end_p_indices)
             else:
-                for start_p_idx in start_p_indices:
-                    features.append((1, start_p_idx))
-                for end_p_idx in end_p_indices:
-                    features.append((-1, end_p_idx))
-
+                features.extend((1, start_p_idx) for start_p_idx in start_p_indices)
+                features.extend((-1, end_p_idx) for end_p_idx in end_p_indices)
             for direction, node_idx in features:
                 write_row(feature_file, [rel_idx, direction, node_idx, assertion_idx])
 
@@ -222,14 +213,7 @@ def load_sql_csv(connection, input_dir):
     Load the CSV files we created into PostgreSQL using the `copy_from`
     method, which is the same as the COPY command at the psql command line.
     """
-    for (filename, tablename) in [
-        (input_dir + '/relations.csv', 'relations'),
-        (input_dir + '/nodes.csv', 'nodes'),
-        (input_dir + '/edges.csv', 'edges'),
-        (input_dir + '/sources.csv', 'sources'),
-        (input_dir + '/edges_gin.shuf.csv', 'edges_gin'),
-        (input_dir + '/edge_features.csv', 'edge_features'),
-    ]:
+    for (filename, tablename) in [(f'{input_dir}/relations.csv', 'relations'), (f'{input_dir}/nodes.csv', 'nodes'), (f'{input_dir}/edges.csv', 'edges'), (f'{input_dir}/sources.csv', 'sources'), (f'{input_dir}/edges_gin.shuf.csv', 'edges_gin'), (f'{input_dir}/edge_features.csv', 'edge_features')]:
         with connection.cursor() as cursor:
             with open(filename, 'rb') as file:
                 cursor.copy_from(file, tablename)

@@ -145,12 +145,12 @@ class DBLemmatizer:
 
         cursor = self.db.cursor()
         if pos:
-            cursor.execute(QUERY + ' AND pos=?', (language, word, pos))
+            cursor.execute(f'{QUERY} AND pos=?', (language, word, pos))
         else:
             cursor.execute(QUERY, (language, word))
 
         rows = list(cursor.fetchall())
-        if len(rows) == 0:
+        if not rows:
             return word, ''
         elif len(rows) == 1:
             root, form, pos = rows[0]
@@ -185,11 +185,7 @@ class DBLemmatizer:
         language = pieces[1]
         text = pieces[2]
         rest = pieces[3:]
-        if rest:
-            pos = rest[0]
-        else:
-            pos = None
-
+        pos = rest[0] if rest else None
         root, _form = self.lookup(language, text, pos)
         return join_uri('c', language, root, *rest)
 

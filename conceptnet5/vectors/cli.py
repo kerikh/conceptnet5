@@ -42,7 +42,7 @@ def filter_word_vectors(dense_hdf_filename, vocab_filename):
     vsw = VectorSpaceWrapper(vector_filename=dense_hdf_filename)
     for line in open(vocab_filename):
         word = line.strip()
-        term = '/c/en/' + word
+        term = f'/c/en/{word}'
         vec = vsw.get_vector(term)
         line_parts = [word] + ['%6.6f' % num for num in vec]
         print(' '.join(line_parts))
@@ -156,10 +156,7 @@ def run_evaluate(filename, subset, semeval_by_language, run_analogies):
     Evaluate a frame on word similarity and (optionally) analogy tasks. Measure its bias.
     """
     frame = load_hdf(filename)
-    if semeval_by_language:
-        scope = 'per-language'
-    else:
-        scope = 'global'
+    scope = 'per-language' if semeval_by_language else 'global'
     print(wordsim.evaluate(frame, subset=subset, semeval_scope=scope))
     if run_analogies:
         print(analogy.evaluate(frame, subset=subset, analogy_filename=ANALOGY_FILENAME))
@@ -177,10 +174,7 @@ def run_evaluate_wordsim(filename, subset, semeval_by_language):
     Evaluate a frame on word similarity tasks. Include OOV handling.
     """
     frame = load_hdf(filename)
-    if semeval_by_language:
-        scope = 'per-language'
-    else:
-        scope = 'global'
+    scope = 'per-language' if semeval_by_language else 'global'
     print(wordsim.evaluate(frame, subset=subset, semeval_scope=scope))
 
 
@@ -195,10 +189,7 @@ def run_evaluate_raw(filename, subset, semeval_by_language):
     Evaluate a frame on word similarity tasks. Do not include OOV handling.
     """
     frame = load_hdf(filename)
-    if semeval_by_language:
-        scope = 'per-language'
-    else:
-        scope = 'global'
+    scope = 'per-language' if semeval_by_language else 'global'
     print(wordsim.evaluate_raw(frame, subset=subset, semeval_scope=scope))
 
 
@@ -296,7 +287,7 @@ def run_miniaturize(input_filename, extra_vocab_filename, output_filename, k):
 @click.option('-l', '--language', default='en')
 def export_background(input_filename, output_dir, concepts_filename, language):
     os.makedirs(output_dir, exist_ok=True)
-    concepts = set(line.strip() for line in open(concepts_filename))
+    concepts = {line.strip() for line in open(concepts_filename)}
     frame = load_hdf(input_filename)
     big_frame = make_big_frame(frame, language)
     small_frame = make_small_frame(big_frame, concepts)

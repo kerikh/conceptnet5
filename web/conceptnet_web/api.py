@@ -56,7 +56,7 @@ def get_int(args, key, default, minimum, maximum):
 @app.route('/<any(a, c, d, r, s):top>/<path:query>')
 def query_node(top, query):
     req_args = flask.request.args
-    path = '/%s/%s' % (top, query.strip('/'))
+    path = f"/{top}/{query.strip('/')}"
     offset = get_int(req_args, 'offset', 0, 0, 100000)
     limit = get_int(req_args, 'limit', 20, 0, 1000)
     grouped = req_args.get('grouped', 'false').lower() == 'true'
@@ -74,12 +74,14 @@ def query_node(top, query):
 @app.route('/query')
 def query():
     req_args = flask.request.args
-    criteria = {}
     offset = get_int(req_args, 'offset', 0, 0, 100000)
     limit = get_int(req_args, 'limit', 50, 0, 1000)
-    for key in flask.request.args:
-        if key in VALID_KEYS:
-            criteria[key] = flask.request.args[key]
+    criteria = {
+        key: flask.request.args[key]
+        for key in flask.request.args
+        if key in VALID_KEYS
+    }
+
     results = responses.query_paginated(criteria, offset=offset, limit=limit)
     return jsonify(results)
 
@@ -96,12 +98,16 @@ def query_standardize_uri():
     text = flask.request.args.get('text') or flask.request.args.get('term')
     if not language:
         return render_error(400, "Please specify a 'language' parameter.")
-    if not text:
-        return render_error(400, "Please specify a 'text' parameter.")
-    return jsonify({
-        '@context': responses.CONTEXT,
-        '@id': standardized_concept_uri(language, text)
-    })
+    return (
+        jsonify(
+            {
+                '@context': responses.CONTEXT,
+                '@id': standardized_concept_uri(language, text),
+            }
+        )
+        if text
+        else render_error(400, "Please specify a 'text' parameter.")
+    )
 
 
 @app.route('/')

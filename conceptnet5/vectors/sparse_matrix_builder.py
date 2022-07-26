@@ -106,22 +106,14 @@ def build_features_from_conceptnet_table(filename):
             if relation in SYMMETRIC_RELATIONS:
                 feature_pairs = []
                 if get_uri_language(concept1) in CORE_LANGUAGES:
-                    feature_pairs.append(
-                        ('{} {} ~'.format(uri_prefix(concept1), relation), concept2)
-                    )
+                    feature_pairs.append((f'{uri_prefix(concept1)} {relation} ~', concept2))
                 if get_uri_language(concept2) in CORE_LANGUAGES:
-                    feature_pairs.append(
-                        ('{} {} ~'.format(uri_prefix(concept2), relation), concept1)
-                    )
+                    feature_pairs.append((f'{uri_prefix(concept2)} {relation} ~', concept1))
             else:
                 if get_uri_language(concept1) in CORE_LANGUAGES:
-                    feature_pairs.append(
-                        ('{} {} -'.format(uri_prefix(concept1), relation), concept2)
-                    )
+                    feature_pairs.append((f'{uri_prefix(concept1)} {relation} -', concept2))
                 if get_uri_language(concept2) in CORE_LANGUAGES:
-                    feature_pairs.append(
-                        ('- {} {}'.format(uri_prefix(concept2), relation), concept1)
-                    )
+                    feature_pairs.append((f'- {uri_prefix(concept2)} {relation}', concept1))
 
             feature_counts = defaultdict(int)
             for feature, concept in feature_pairs:
@@ -140,11 +132,12 @@ def build_features_from_conceptnet_table(filename):
         prefixes = list(uri_prefixes(concept, 3))
         for prefix in prefixes:
             auto_features = [
-                '{} {} ~'.format(prefix, 'SimilarTo'),
-                '{} {} ~'.format(prefix, 'RelatedTo'),
-                '{} {} -'.format(prefix, 'FormOf'),
-                '- {} {}'.format(prefix, 'FormOf'),
+                f'{prefix} SimilarTo ~',
+                f'{prefix} RelatedTo ~',
+                f'{prefix} FormOf -',
+                f'- {prefix} FormOf',
             ]
+
             for feature in auto_features:
                 concept_index = concept_labels.add(prefix)
                 feature_index = feature_labels.add(feature)

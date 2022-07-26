@@ -40,8 +40,9 @@ def evaluate(frame, subset='val'):
         # for the final evaluation, use just the test data
         subset = 'test'
     filename = get_support_data_filename(
-        'story-cloze/cloze_test_spring2016_%s.tsv' % subset
+        f'story-cloze/cloze_test_spring2016_{subset}.tsv'
     )
+
     vectors = VectorSpaceWrapper(frame=frame)
     total = 0
     correct = 0

@@ -21,16 +21,8 @@ def flat_map(response):
     # contents of that file.
     response['@context'] = CONTEXT['@context']
 
-    # jsonld.flatten gives us a list of objects, which all have @id values
-    # (unless they're awkward "blank nodes", like definitions of features).
-    # The @id values are unique after flattening, so we can make a dictionary
-    # keyed by them.
-    result = {}
     flat_objects = jsonld.flatten(response)
-    for obj in flat_objects:
-        if '@id' in obj:
-            result[obj['@id']] = obj
-    return result
+    return {obj['@id']: obj for obj in flat_objects if '@id' in obj}
 
 
 def vocab(name):
@@ -38,7 +30,7 @@ def vocab(name):
     Given a property such as 'rel', get its fully-qualified URL in our
     JSON-LD vocabulary.
     """
-    return "http://api.conceptnet.io/ld/conceptnet5.7/context.ld.json#" + name
+    return f"http://api.conceptnet.io/ld/conceptnet5.7/context.ld.json#{name}"
 
 
 def api(uri):
@@ -46,7 +38,7 @@ def api(uri):
     Given a URI that uses the ConceptNet API, such as "/c/en/test", get its
     fully-qualified URL.
     """
-    return "http://api.conceptnet.io" + uri
+    return f"http://api.conceptnet.io{uri}"
 
 
 def check_id_match(value, uri):
@@ -60,11 +52,7 @@ def check_id_match(value, uri):
         assert len(value) == 1
         value = value[0]
 
-    if isinstance(value, str):
-        value_id = value
-    else:
-        value_id = value['@id']
-
+    value_id = value if isinstance(value, str) else value['@id']
     assert value_id == uri
 
 

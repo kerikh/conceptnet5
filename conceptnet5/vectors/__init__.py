@@ -19,10 +19,7 @@ def replace_numbers(s):
     This operation is applied to text that passes through word2vec, so we
     should match it.
     """
-    if DOUBLE_DIGIT_RE.search(s):
-        return DIGIT_RE.sub('#', s)
-    else:
-        return s
+    return DIGIT_RE.sub('#', s) if DOUBLE_DIGIT_RE.search(s) else s
 
 
 def standardized_uri(language, term):

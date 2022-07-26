@@ -62,7 +62,7 @@ def sharded_propagate(
         temp_filename = output_filename + '.shard%d' % i
         shard_from = shard_width * i
         shard_to = shard_from + shard_width
-        if len(frame_box) == 0:
+        if not frame_box:
             frame_box.append(load_hdf(embedding_filename))
         embedding_shard = pd.DataFrame(frame_box[0].iloc[:, shard_from:shard_to])
 
@@ -107,16 +107,20 @@ def make_adjacency_matrix(assoc_filename, embedding_vocab):
     component_labels = graph.find_components()
 
     # Get the labels of components that overlap the embedding vocabulary.
-    good_component_labels = set(
-        label for term, label in component_labels.items() if term in embedding_vocab
-    )
+    good_component_labels = {
+        label
+        for term, label in component_labels.items()
+        if term in embedding_vocab
+    }
+
 
     # Now get the concepts in those components.
-    good_concepts = set(
+    good_concepts = {
         term
         for term, label in component_labels.items()
         if label in good_component_labels
-    )
+    }
+
 
     del component_labels, good_component_labels
 
@@ -191,7 +195,7 @@ def propagate(
         ]
     )
 
-    for iteration in range(iterations):
+    for _ in range(iterations):
         zero_indicators = np.abs(vectors).sum(1) == 0
         if not np.any(zero_indicators):
             break
@@ -209,8 +213,7 @@ def propagate(
         vectors[fringe, :] = diags([weights], [0], format='csr').dot(vectors[fringe, :])
 
     n_old_plus_new_non_en = len(combined_index) - n_new_english
-    result = pd.DataFrame(
-        index=combined_index[0:n_old_plus_new_non_en],
+    return pd.DataFrame(
+        index=combined_index[:n_old_plus_new_non_en],
         data=vectors[0:n_old_plus_new_non_en, :],
     )
-    return result

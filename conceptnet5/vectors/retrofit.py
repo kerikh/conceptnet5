@@ -30,7 +30,7 @@ def sharded_retrofit(
         temp_filename = output_filename + '.shard%d' % i
         shard_from = shard_width * i
         shard_to = shard_from + shard_width
-        if len(frame_box) == 0:
+        if not frame_box:
             frame_box.append(load_hdf(dense_hdf_filename))
         dense_frame = pd.DataFrame(frame_box[0].iloc[:, shard_from:shard_to])
 
@@ -124,7 +124,7 @@ def retrofit(
     vecs = orig_vecs
     for iteration in range(iterations):
         if verbosity >= 1:
-            print('Retrofitting: Iteration %s of %s' % (iteration + 1, iterations))
+            print(f'Retrofitting: Iteration {iteration + 1} of {iterations}')
 
         # Since the sparse weight matrix is row-stochastic and has self-loops,
         # pre-multiplication by it replaces each vector by a weighted average
@@ -179,7 +179,7 @@ def retrofit(
     for iteration in range(max_cleanup_iters):
         zero_indicators = np.abs(vecs).sum(1) == 0
         n_zero_indicators = np.sum(zero_indicators)
-        if n_zero_indicators == 0 or n_zero_indicators == n_zero_indicators_old:
+        if n_zero_indicators in [0, n_zero_indicators_old]:
             break
         n_zero_indicators_old = n_zero_indicators
         # First replace each zero vector (row) by the weighted average of all its

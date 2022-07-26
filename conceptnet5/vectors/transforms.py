@@ -16,7 +16,7 @@ def standardize_row_labels(frame, language='en', forms=True):
     URI get combined, with earlier rows given more weight.
     """
     # Check for en/term format we use to train fastText on OpenSubtitles data
-    if all(label.count('/') == 1 for label in frame.index[0:5]):
+    if all(label.count('/') == 1 for label in frame.index[:5]):
         tuples = [label.partition('/') for label in frame.index]
         frame.index = [
             uri_prefix(standardized_uri(language, text))
@@ -50,8 +50,7 @@ def standardize_row_labels(frame, language='en', forms=True):
     # Rearrange the items in descending order of weight, similar to the order
     # we get them in from word2vec and GloVe
     combined_weights.sort_values(inplace=True, ascending=False)
-    result = scaled.loc[combined_weights.index]
-    return result
+    return scaled.loc[combined_weights.index]
 
 
 def l1_normalize_columns(frame):
@@ -110,11 +109,11 @@ def choose_small_vocabulary(index, concepts):
     ...but keeping the terms in Korean, which would be too aggressively filtered
     by those criteria.
     """
-    vocab = [
-        term for term in index
+    return [
+        term
+        for term in index
         if ('_' not in term and term in concepts) or term.startswith('/c/ko/')
     ]
-    return vocab
 
 
 def make_big_frame(frame, language):
@@ -123,8 +122,7 @@ def make_big_frame(frame, language):
      are in languages other than the language specified.
     """
     vocabulary = [term for term in frame.index if get_uri_language(term) == language]
-    big_frame = frame.loc[vocabulary]
-    return big_frame
+    return frame.loc[vocabulary]
 
 
 def make_small_frame(big_frame, concepts):

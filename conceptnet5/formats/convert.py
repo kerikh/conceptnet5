@@ -102,7 +102,7 @@ def msgpack_to_assoc(input_filename, output_filename):
                     count_by_dataset[dataset] += 1
                     print(line, file=out_stream)
 
-            if start_uri == '/c/en/person' or start_uri == '/c/en/people':
+            if start_uri in ['/c/en/person', '/c/en/people']:
                 if rel == '/r/Desires':
                     pairs = [('/c/en/good', end_uri)]
                 elif rel == '/r/NotDesires':

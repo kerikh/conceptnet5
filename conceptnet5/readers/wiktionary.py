@@ -146,10 +146,7 @@ WIKT_RELATIONS = {
 
 
 def transform_relation(rel):
-    if rel.startswith('form/'):
-        return "/r/FormOf", False
-    else:
-        return WIKT_RELATIONS[rel]
+    return ("/r/FormOf", False) if rel.startswith('form/') else WIKT_RELATIONS[rel]
 
 
 def transform_term(data_language, termdata, assumed_languages, db, use_etyms=True):
@@ -175,22 +172,20 @@ def transform_term(data_language, termdata, assumed_languages, db, use_etyms=Tru
 
     if 'pos' not in termdata:
         return standardized_concept_uri(language, text)
-    else:
-        pos = termdata['pos']
-        etym_sense = None
-        if use_etyms:
-            etym_sense = etym_label(data_language, termdata)
-        if etym_sense is not None:
-            return standardized_concept_uri(language, text, pos, 'wikt', etym_sense)
-        else:
-            return standardized_concept_uri(language, text, pos)
+    pos = termdata['pos']
+    etym_sense = etym_label(data_language, termdata) if use_etyms else None
+    return (
+        standardized_concept_uri(language, text, pos, 'wikt', etym_sense)
+        if etym_sense is not None
+        else standardized_concept_uri(language, text, pos)
+    )
 
 
 def etym_label(language, term):
     if 'etym' not in term or not term['etym']:
         return None
 
-    return "{}_{}".format(language, term['etym'])
+    return f"{language}_{term['etym']}"
 
 
 def disambiguate_language(text, assumed_languages, db):
@@ -221,10 +216,7 @@ def disambiguate_language(text, assumed_languages, db):
         if c.fetchone():
             ok_languages.append(language)
 
-    if len(ok_languages) == 0:
-        return None
-    else:
-        return ok_languages[0]
+    return ok_languages[0] if ok_languages else None
 
 
 def segmented_stream(input_file):
@@ -262,10 +254,10 @@ def read_wiktionary(input_file, db_file, output_file):
     for heading, items in segmented_stream(input_file):
         language = heading['language']
         title = heading['title']
-        dataset = '/d/wiktionary/{}'.format(language)
+        dataset = f'/d/wiktionary/{language}'
         url_title = heading['title'].replace(' ', '_')
-        web_url = 'http://{}.wiktionary.org/wiki/{}'.format(language, url_title)
-        web_source = '/s/resource/wiktionary/{}'.format(language)
+        web_url = f'http://{language}.wiktionary.org/wiki/{url_title}'
+        web_source = f'/s/resource/wiktionary/{language}'
 
         source = {'contributor': web_source, 'process': PARSER_RULE}
 

@@ -59,9 +59,9 @@ def export_text(frame, filename, filter_language=None):
     vectors = frame.values
     index = frame.index
     if filter_language is not None:
-        start_idx = index.get_loc('/c/%s/#' % filter_language, method='bfill')
+        start_idx = index.get_loc(f'/c/{filter_language}/#', method='bfill')
         try:
-            end_idx = index.get_loc('/c/%s0' % filter_language, method='bfill')
+            end_idx = index.get_loc(f'/c/{filter_language}0', method='bfill')
         except KeyError:
             end_idx = frame.shape[0]
         frame = frame.iloc[start_idx:end_idx]
@@ -193,7 +193,7 @@ def _read_until_space(file):
     chars = []
     while True:
         newchar = file.read(1)
-        if newchar == b'' or newchar == b' ':
+        if newchar in [b'', b' ']:
             break
         chars.append(newchar[0])
     return bytes(chars).decode('utf-8', 'replace')

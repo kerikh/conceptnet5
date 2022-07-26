@@ -67,7 +67,7 @@ def search_concept():
 @app.route('/c/<path:uri>')
 def browse_concept(uri):
     req_args = flask.request.args
-    concept = '/c/%s' % uri
+    concept = f'/c/{uri}'
     pieces = split_uri(concept)
     if len(pieces) <= 2:
         return browse_node('c', pieces[1])
@@ -76,12 +76,11 @@ def browse_concept(uri):
     # Offset is not used when grouping by features
     offset = get_int(req_args, 'offset', 0, 0, 10000)
 
-    filters = {}
-    for key in responses.VALID_KEYS:
-        if key != 'node' and key in req_args:
-            filters[key] = req_args[key]
-
-    if filters:
+    if filters := {
+        key: req_args[key]
+        for key in responses.VALID_KEYS
+        if key != 'node' and key in req_args
+    }:
         filters['node'] = concept
         limit = get_int(req_args, 'limit', 100, 0, 1000)
         return edge_list_query(filters, offset=offset, limit=limit)
@@ -127,7 +126,7 @@ def browse_concept(uri):
 def browse_node(top, query):
     # TODO: can we make this work with edge_list_query?
     req_args = flask.request.args
-    path = '/%s/%s' % (top, query.strip('/'))
+    path = f"/{top}/{query.strip('/')}"
     offset = get_int(req_args, 'offset', 0, 0, 100000)
     limit = get_int(req_args, 'limit', 100, 0, 1000)
     results = responses.lookup_paginated(path, offset=offset, limit=limit)
@@ -146,12 +145,14 @@ def browse_node(top, query):
 @app.route('/query')
 def query():
     req_args = flask.request.args
-    criteria = {}
     offset = get_int(req_args, 'offset', 0, 0, 100000)
     limit = get_int(req_args, 'limit', 100, 0, 1000)
-    for key in flask.request.args:
-        if key in responses.VALID_KEYS:
-            criteria[key] = flask.request.args[key]
+    criteria = {
+        key: flask.request.args[key]
+        for key in flask.request.args
+        if key in responses.VALID_KEYS
+    }
+
     return edge_list_query(criteria, offset=offset, limit=limit)
 
 
@@ -191,7 +192,7 @@ def error_page_not_found(e):
 
 @app.errorhandler(500)
 def internal_server_error(e):
-    return render_error(500, '%s: %s' % (e.__class__.__name__, e))
+    return render_error(500, f'{e.__class__.__name__}: {e}')
 
 
 # Visiting this URL intentionally causes an error, so we can see if Sentry

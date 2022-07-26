@@ -34,10 +34,7 @@ def make_query_url(url, items):
     string.
     """
     str_items = ['{}={}'.format(*item) for item in items]
-    if not str_items:
-        return url
-    else:
-        return url + '?' + ('&'.join(str_items))
+    return f'{url}?' + ('&'.join(str_items)) if str_items else url
 
 
 def groupkey_to_pairs(groupkey, term):
@@ -61,8 +58,9 @@ def paginated_url(url, params, offset, limit):
     replacing those parameters if they already existed.
     """
     new_params = [
-        (key, val) for (key, val) in params if key != 'offset' and key != 'limit'
+        (key, val) for (key, val) in params if key not in ['offset', 'limit']
     ] + [('offset', offset), ('limit', limit)]
+
     return make_query_url(url, new_params)
 
 
@@ -106,9 +104,9 @@ def lookup_grouped_by_feature(term, filters=None, feature_limit=10):
 
     found = FINDER.lookup_grouped_by_feature(term, limit=(feature_limit + 1))
     grouped = []
+    base_url = '/query'
     for groupkey, assertions in found.items():
         direction, rel = groupkey
-        base_url = '/query'
         feature_pairs = groupkey_to_pairs(groupkey, term)
         url = make_query_url(base_url, feature_pairs)
         symmetric = direction == 0
@@ -132,13 +130,14 @@ def lookup_grouped_by_feature(term, filters=None, feature_limit=10):
         del group['weight']
 
     response = ld_node(term)
-    if not grouped and not filters:
+    if grouped or filters:
+        response['features'] = grouped
+        return success(response)
+
+    else:
         return error(
             response, 404, '%r is not a node in ConceptNet.' % response['label']
         )
-    else:
-        response['features'] = grouped
-        return success(response)
 
 
 def lookup_paginated(term, limit=50, offset=0):
@@ -150,13 +149,14 @@ def lookup_paginated(term, limit=50, offset=0):
     found = FINDER.lookup(term, limit=(limit + 1), offset=offset)
     edges = found[:limit]
     response = {'@id': term, 'edges': edges}
-    more = len(found) > len(edges)
     if len(found) > len(edges) or offset != 0:
+        more = len(found) > len(edges)
         response['view'] = make_paginated_view(term, (), offset, limit, more=more)
-    if not found:
-        return error(response, 404, '%r is not a node in ConceptNet.' % term)
-    else:
-        return success(response)
+    return (
+        success(response)
+        if found
+        else error(response, 404, '%r is not a node in ConceptNet.' % term)
+    )
 
 
 def lookup_single_assertion(uri):
@@ -169,9 +169,8 @@ def lookup_single_assertion(uri):
     response = {'@id': uri}
     if not found:
         return error(response, 404, '%r is not an assertion in ConceptNet.' % uri)
-    else:
-        response.update(found[0])
-        return success(response)
+    response |= found[0]
+    return success(response)
 
 
 def query_relatedness(node1, node2):
@@ -191,7 +190,7 @@ def query_relatedness(node1, node2):
         return error(
             {'@id': url},
             400,
-            "Couldn't look up {} or {} (or both).".format(repr(node1), repr(node2)),
+            f"Couldn't look up {repr(node1)} or {repr(node2)} (or both).",
         )
 
 
@@ -215,7 +214,7 @@ def query_related(uri, filter=None, limit=20):
                 else:
                     term = piece
                     weight = 1.
-                query.append(('/c/{}/{}'.format(language, term), weight))
+                query.append((f'/c/{language}/{term}', weight))
         except ValueError:
             return error({'@id': uri}, 400, "Couldn't parse this term list: %r" % uri)
     else:
@@ -230,8 +229,7 @@ def query_related(uri, filter=None, limit=20):
         {'@id': key, 'weight': round(float(weight), 3)}
         for (key, weight) in found.items()
     ]
-    response = {'@id': uri, 'related': related}
-    return response
+    return {'@id': uri, 'related': related}
 
 
 def query_paginated(query, offset=0, limit=50):
@@ -244,8 +242,8 @@ def query_paginated(query, offset=0, limit=50):
     found = FINDER.query(query, limit=limit + 1, offset=offset)
     edges = found[:limit]
     response = {'@id': make_query_url('/query', query.items()), 'edges': edges}
-    more = len(found) > len(edges)
     if len(found) > len(edges) or offset != 0:
+        more = len(found) > len(edges)
         response['view'] = make_paginated_view(
             '/query', sorted(query.items()), offset, limit, more=more
         )

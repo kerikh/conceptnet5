@@ -122,13 +122,7 @@ def handle_file(infile, outfile):
         freq = int(freq)
         orderscore = int(orderscore)
 
-        # Test each word
-        flagged = False
-        for rword in right.split():
-            if BAD_CLUE_REGEX.match(rword):
-                flagged = True
-                break
-
+        flagged = any(BAD_CLUE_REGEX.match(rword) for rword in right.split())
         if flagged:
             outcomes['flag word'] += 1
             continue
@@ -204,7 +198,7 @@ def handle_file(infile, outfile):
                 source['process'] = '/s/process/split_words'
 
             # Build the natural-language-ish surface text for this clue
-            text = '[[%s]] %s [[%s]]' % (left, reltext, rightword)
+            text = f'[[{left}]] {reltext} [[{rightword}]]'
 
             count += 1
             outcomes['success'] += 1

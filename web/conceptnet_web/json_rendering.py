@@ -74,10 +74,9 @@ def jsonify(obj, status=200):
             status=status,
             mimetype='application/json'
         )
-    else:
-        pretty_json = json.dumps(obj, ensure_ascii=False, sort_keys=True, indent=2)
-        return flask.render_template(
-            'json.html',
-            json=pretty_json,
-            raw_object=obj
-        ), status
+    pretty_json = json.dumps(obj, ensure_ascii=False, sort_keys=True, indent=2)
+    return flask.render_template(
+        'json.html',
+        json=pretty_json,
+        raw_object=obj
+    ), status

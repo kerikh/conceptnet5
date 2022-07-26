@@ -20,12 +20,11 @@ def read_google_analogies(filename):
     """
     Read the 'questions-words.txt' file that comes with the word2vec package.
     """
-    quads = [
+    return [
         [standardized_uri('en', term) for term in line.rstrip().split(' ')]
         for line in open(filename, encoding='utf-8')
         if not line.startswith(':')
     ]
-    return quads
 
 
 def read_turney_analogies(filename):
@@ -68,7 +67,7 @@ def read_train_pairs_semeval2012(subset, subclass):
     Read a set of three training pairs for a given subclass. These pairs are
     used as prototypical examples of a given relation to which test pairs are compared.
     """
-    filename = 'semeval12-2/{}/Phase1Questions-{}.txt'.format(subset, subclass)
+    filename = f'semeval12-2/{subset}/Phase1Questions-{subclass}.txt'
     with open(get_support_data_filename(filename)) as file:
         train_pairs = []
         for i, line in enumerate(file):
@@ -89,7 +88,7 @@ def read_turk_answers_semeval2012(subset, subclass, test_questions):
       * pairqnum2least -
       * pairqnum2most
     """
-    filename = 'semeval12-2/{}/Phase2Answers-{}.txt'.format(subset, subclass)
+    filename = f'semeval12-2/{subset}/Phase2Answers-{subclass}.txt'
     with open(get_support_data_filename(filename)) as file:
         answers = []
         for i, line in enumerate(file):
@@ -114,7 +113,7 @@ def read_test_questions_semeval2012(subset, subclass):
     Read test questions for a specific subclass. A test question has the following format:
     pair1,pair2,pair3,pair4
     """
-    filename = 'semeval12-2/{}/Phase2Questions-{}.txt'.format(subset, subclass)
+    filename = f'semeval12-2/{subset}/Phase2Questions-{subclass}.txt'
     with open(get_support_data_filename(filename)) as file:
         test_questions = []
         for line in file:
@@ -132,7 +131,7 @@ def read_turk_ranks_semeval2012(subset, subclass):
     a pair the most prototypical and the number of times they judged it as the least
     prototypical.
     """
-    filename = 'semeval12-2/{}/GoldRatings-{}.txt'.format(subset, subclass)
+    filename = f'semeval12-2/{subset}/GoldRatings-{subclass}.txt'
     with open(get_support_data_filename(filename)) as file:
         gold_ranks = []
         for line in file:
@@ -153,7 +152,7 @@ def read_bats(category):
     will all be supplied as a list if they are an answer (b2). However, if they are a part of a
     question (b1), only the first one will be used.
     """
-    filename = 'bats/{}.txt'.format(category)
+    filename = f'bats/{category}.txt'
     pairs = []
     with open(get_support_data_filename(filename)) as file:
         for line in file:
@@ -176,13 +175,7 @@ def read_bats(category):
         ]  # select only one term for b1, even if more may be available
         second_pairs = [pair for j, pair in enumerate(pairs) if j != i]
         for second_pair in second_pairs:
-            quad = []
-
-            # the first three elements of a quad are the two terms in first_pair and the first
-            # term of the second_pair
-            quad.extend(
-                [standardized_uri('en', term) for term in first_pair + second_pair[:1]]
-            )
+            quad = [standardized_uri('en', term) for term in first_pair + second_pair[:1]]
 
             # if the second element of the second pair (b2) is a list, it means there are multiple
             # correct answers for b2. We want to keep all of them.
@@ -241,13 +234,12 @@ def pairwise_analogy_func(wrap, a1, b1, a2, b2, weight_direct, weight_transpose)
     va2 = wrap.get_vector(a2)
     vb2 = wrap.get_vector(b2)
 
-    value = (
+    return (
         weight_direct * (vb2 - va2).dot(vb1 - va1)
         + weight_transpose * (vb2 - vb1).dot(va2 - va1)
         + vb2.dot(vb1)
         + va2.dot(va1)
     )
-    return value
 
 
 def eval_pairwise_analogies(
@@ -355,7 +347,7 @@ def eval_google_analogies(vectors, subset='semantic', vocab_size=200000, verbose
     I (Rob) think this data set is not very representative, but evaluating
     against it is all the rage.
     """
-    filename = get_support_data_filename('google-analogies/{}-words.txt'.format(subset))
+    filename = get_support_data_filename(f'google-analogies/{subset}-words.txt')
     quads = read_google_analogies(filename)
     return eval_open_vocab_analogies(vectors, quads, vocab_size, verbose)
 
@@ -380,13 +372,9 @@ def eval_open_vocab_analogies(vectors, quads, vocab_size=200000, verbose=False):
         )
         if is_correct:
             correct += 1
-        else:
-            if verbose and result not in seen_mistakes:
-                print(
-                    "%s : %s :: %s : [%s] (should be %s)"
-                    % (quad[0], quad[1], quad[2], result, answer)
-                )
-                seen_mistakes.add(result)
+        elif verbose and result not in seen_mistakes:
+            print(f"{quad[0]} : {quad[1]} :: {quad[2]} : [{result}] (should be {answer})")
+            seen_mistakes.add(result)
         total += 1
     low, high = proportion_confint(correct, total)
     result = pd.Series([correct / total, low, high], index=['acc', 'low', 'high'])
@@ -407,17 +395,17 @@ def choose_vocab(quads, vocab_size):
     Set vocab_size='cheat' to see the results for an unrealistically optimal
     vocabulary (the vocabulary of the set of answer words).
     """
-    if vocab_size == 'cheat':
-        vocab = [
+    return (
+        [
             standardized_uri('en', word)
-            for word in sorted(set([quad[3] for quad in quads]))
+            for word in sorted({quad[3] for quad in quads})
         ]
-    else:
-        vocab = [
+        if vocab_size == 'cheat'
+        else [
             standardized_uri('en', word)
             for word in wordfreq.top_n_list('en', vocab_size)
         ]
-    return vocab
+    )
 
 
 def eval_semeval2012_analogies(
@@ -544,8 +532,7 @@ def eval_bats_category(vectors, category, vocab_size=200000, verbose=False):
     Evaluate a single category of BATS dataset.
     """
     quads = read_bats(category)
-    category_results = eval_open_vocab_analogies(vectors, quads, vocab_size, verbose)
-    return category_results
+    return eval_open_vocab_analogies(vectors, quads, vocab_size, verbose)
 
 
 def evaluate(
@@ -595,14 +582,11 @@ def evaluate(
         google_results = eval_google_analogies(
             vectors, subset=gsubset, vocab_size=google_vocab_size
         )
-        results.loc['google-%s' % gsubset] = google_results
+        results.loc[f'google-{gsubset}'] = google_results
 
     # There's no meaningful "all" subset for semeval12, because the dev and
     # test data are stored entirely separately. Just use "test".
-    if subset == 'dev':
-        semeval12_subset = 'dev'
-    else:
-        semeval12_subset = 'test'
+    semeval12_subset = 'dev' if subset == 'dev' else 'test'
     if scope == 'global':
         maxdiff_score, spearman_score = eval_semeval2012_global(
             vectors, semeval_weights[0], semeval_weights[1], semeval12_subset
@@ -620,8 +604,8 @@ def evaluate(
                     semeval12_subset,
                     subclass,
                 )
-                results.loc['semeval12-{}-spearman'.format(subclass)] = spearman_score
-                results.loc['semeval12-{}-maxdiff'.format(subclass)] = maxdiff_score
+                results.loc[f'semeval12-{subclass}-spearman'] = spearman_score
+                results.loc[f'semeval12-{subclass}-maxdiff'] = maxdiff_score
             except FileNotFoundError:
                 continue
 
@@ -633,14 +617,14 @@ def evaluate(
         bats_results.append((category, category_results))
 
     if scope == 'global':
-        average_scores = []
-        for interval in ['acc', 'low', 'high']:
-            average_scores.append(
-                np.mean([result[interval] for name, result in bats_results])
-            )
+        average_scores = [
+            np.mean([result[interval] for name, result in bats_results])
+            for interval in ['acc', 'low', 'high']
+        ]
+
         results.loc['bats'] = pd.Series(average_scores, index=['acc', 'low', 'high'])
     else:
         for name, result in bats_results:
-            results.loc['bats-{}'.format(''.join(name))] = result
+            results.loc[f"bats-{''.join(name)}"] = result
 
     return results

@@ -73,12 +73,11 @@ def topic_to_concept(language, topic):
     # find titles of the form Foo (bar)
     topic = topic.replace('_', ' ')
     match = re.match(r'([^(]+) \(([^)]+)\)', topic)
-    if not match:
-        return standardized_concept_uri(language, topic)
-    else:
-        return standardized_concept_uri(
-            language, match.group(1), 'n', 'wp', match.group(2)
-        )
+    return (
+        standardized_concept_uri(language, match[1], 'n', 'wp', match[2])
+        if match
+        else standardized_concept_uri(language, topic)
+    )
 
 
 def standardized_concept_name(lang, text):
@@ -118,11 +117,7 @@ def standardized_concept_uri(lang, text, *more):
     lang = lang.lower()
     if lang in LCODE_ALIASES:
         lang = LCODE_ALIASES[lang]
-    if lang == 'en':
-        token_filter = english_filter
-    else:
-        token_filter = None
-
+    token_filter = english_filter if lang == 'en' else None
     text = preprocess_text(text.replace('_', ' '), lang)
     tokens = simple_tokenize(text)
     if token_filter is not None:
@@ -185,7 +180,7 @@ def ld_node(uri, label=None):
             ld['sense_label'] = pieces[3]
 
         if len(pieces) > 4 and pieces[4] in ('wp', 'wn'):
-            ld['sense_label'] += ', ' + pieces[-1]
+            ld['sense_label'] += f', {pieces[-1]}'
 
         ld['term'] = uri_prefix(uri)
         ld['@type'] = 'Node'

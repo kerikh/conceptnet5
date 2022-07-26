@@ -67,8 +67,7 @@ def un_camel_case(text):
     revtext = text[::-1]
     pieces = []
     while revtext:
-        match = CAMEL_RE.match(revtext)
-        if match:
+        if match := CAMEL_RE.match(revtext):
             pieces.append(match.group(1))
             revtext = revtext[match.end():]
         else:

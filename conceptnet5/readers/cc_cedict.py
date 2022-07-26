@@ -100,8 +100,7 @@ def extract_han_characters(definition):
     Extract han characters. This is used when extracting variants, abbreviations and references
     to other characters.
     """
-    chars = regex.search(HAN_CHAR_REGEX, definition)
-    if chars:
+    if chars := regex.search(HAN_CHAR_REGEX, definition):
         return chars.group(0).split('|')
     return []
 
@@ -135,9 +134,7 @@ def handle_file(filename, output_file):
             if 'Taiwan pr.' in definition or 'also pr.' in definition:
                 continue
 
-            # Check if it's the definition matches a person syntax, i.e. includes a date range
-            person_match = re.match(DATE_RANGE_REGEX, definition)
-            if person_match:
+            if person_match := re.match(DATE_RANGE_REGEX, definition):
                 persons = extract_person(person_match)
                 for person in persons:
                     edge = make_edge(

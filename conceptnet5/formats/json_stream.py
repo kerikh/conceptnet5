@@ -52,16 +52,14 @@ def read_json_stream(filename_or_stream, offsets=False):
     """
     if hasattr(filename_or_stream, 'read'):
         stream = filename_or_stream
+    elif filename_or_stream.endswith('.gz'):
+        stream = gzip.open(filename_or_stream, 'rb')
     else:
-        if filename_or_stream.endswith('.gz'):
-            stream = gzip.open(filename_or_stream, 'rb')
-        else:
-            stream = open(filename_or_stream, 'rb')
+        stream = open(filename_or_stream, 'rb')
 
     offset = 0
     for bline in stream:
-        line = bline.decode('utf-8').strip()
-        if line:
+        if line := bline.decode('utf-8').strip():
             if offsets:
                 yield (json.loads(line), offset)
             else:

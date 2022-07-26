@@ -60,13 +60,13 @@ class ConceptNetAssociationGraph:
         component_labels = {vertex: -1 for vertex in self.vertices()}
         vertices_to_examine = set(self.vertices())
         new_label = -1
-        while len(vertices_to_examine) > 0:
+        while vertices_to_examine:
             new_label += 1
             vertex = vertices_to_examine.pop()
             assert component_labels[vertex] == -1
             stack = [vertex]
             component_labels[vertex] = new_label
-            while len(stack) > 0:
+            while stack:
                 v = stack.pop()
                 for neighbor in self.vertex_to_neighbors[v]:
                     if component_labels[neighbor] != new_label:
@@ -94,11 +94,7 @@ class ConceptNetAssociationGraph:
         """
         graph = cls()
 
-        if filtered_concepts is None:
-            filter_concepts = False
-        else:
-            filter_concepts = True
-
+        filter_concepts = filtered_concepts is not None
         with open(filename, encoding='utf-8') as file:
             for line in file:
                 left, right, value, dataset, rel = line.rstrip().split('\t', 4)
@@ -113,10 +109,11 @@ class ConceptNetAssociationGraph:
                     continue
                 if gleft == gright:
                     continue
-                if filter_concepts and gleft not in filtered_concepts:
-                    continue
-                if filter_concepts and gright not in filtered_concepts:
-                    continue
+                if filter_concepts:
+                    if gleft not in filtered_concepts:
+                        continue
+                    if gright not in filtered_concepts:
+                        continue
                 graph.add_edge(gleft, gright, value, dataset, rel)
 
         return graph
@@ -154,9 +151,7 @@ def make_filtered_concepts(filename, cutoff=3, en_cutoff=3):
     with open(filename, encoding='utf-8') as file:
         for line in file:
             left, right, _value, _dataset, rel = line.rstrip().split('\t')
-            if rel == '/r/SenseOf':
-                pass
-            else:
+            if rel != '/r/SenseOf':
                 gleft = uri_prefix(left)
                 gright = uri_prefix(right)
                 if is_concept(gright):
@@ -164,12 +159,13 @@ def make_filtered_concepts(filename, cutoff=3, en_cutoff=3):
                 if is_concept(gleft):
                     counts[gright] += 1
 
-    filtered_concepts = {
+    return {
         concept
         for (concept, count) in counts.items()
-        if (count >= en_cutoff or (not is_concept(concept) and count >= cutoff))
+        if (
+            count >= en_cutoff or (not is_concept(concept) and count >= cutoff)
+        )
     }
-    return filtered_concepts
 
 
 def read_embedding_vocabularies(filenames):
@@ -220,9 +216,12 @@ def reduce_assoc(
     # vectors to any of its vertices, so we remove that component from the
     # output.
 
-    good_component_labels = set(
-        label for term, label in component_labels.items() if term in embedding_vocab
-    )
+    good_component_labels = {
+        label
+        for term, label in component_labels.items()
+        if term in embedding_vocab
+    }
+
 
     with open(output_filename, 'w', encoding='utf-8') as out:
         for gleft, gright, value, dataset, rel in graph.edges:

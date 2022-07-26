@@ -55,7 +55,7 @@ def concat_intersect(frame_filenames):
         ncolumns += frame.shape[1]
 
     # Get the list of labels in a predictable order.
-    label_intersection = sorted(label for label in label_intersection)
+    label_intersection = sorted(iter(label_intersection))
     nrows = len(label_intersection)
 
     # Now we know how many rows and columns of data we have, so allocate the
@@ -71,10 +71,7 @@ def concat_intersect(frame_filenames):
             joindata[i, offset : (offset + width)] = frame.loc[label].values
     del frame
 
-    # Convert the array to a DataFrame with the appropriate labels, and
-    # return it.
-    joined = pd.DataFrame(joindata, index=label_intersection)
-    return joined
+    return pd.DataFrame(joindata, index=label_intersection)
 
 
 def merge_intersect(frame_filenames, subsample=20, k=300):

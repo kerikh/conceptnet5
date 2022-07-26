@@ -79,9 +79,7 @@ def extract_positional_arg(mock_obj, call_number, position):
         return None
     call_args = mock_obj.call_args_list[call_number]
     positional_args = call_args[0]
-    if len(positional_args) <= position:
-        return None
-    return positional_args[position]
+    return None if len(positional_args) <= position else positional_args[position]
 
 
 _term_count = 0
@@ -107,7 +105,7 @@ def make_term():
     global _term_count
     language = random_gen.choice(LANGUAGES, p=LANGUAGE_PROBA)
     term_letters = _numbers_to_letters(_term_count)
-    term_text = 'term_{}'.format(term_letters)
+    term_text = f'term_{term_letters}'
     term = concept_uri(language, term_text)
     _term_count += 1
     return term
@@ -118,8 +116,7 @@ def make_term_list(length):
     Make and return a list of terms, of the requested length, each generated 
     by make_term.
     """
-    terms = [make_term() for i_term in range(length)]
-    return terms
+    return [make_term() for _ in range(length)]
 
 
 def make_random_frame(terms):
@@ -128,8 +125,7 @@ def make_random_frame(terms):
     """
     frame_index = pd.Index(terms)
     frame_data = random_gen.randn(len(frame_index), EMBEDDING_DIM)
-    frame = pd.DataFrame(data=frame_data, index=frame_index)
-    return frame
+    return pd.DataFrame(data=frame_data, index=frame_index)
 
 
 class ConceptNetRandomTestGraph:
@@ -223,8 +219,7 @@ class ConceptNetRandomTestGraph:
                 new_terms = random_gen.choice([none, one, piece])
             terms.extend(new_terms)
         random_gen.shuffle(terms)  # destroy order by pieces
-        frame = make_random_frame(terms)
-        return frame
+        return make_random_frame(terms)
 
     def combined_index_and_new_term_sets(self, frame):
         """
@@ -246,13 +241,14 @@ class ConceptNetRandomTestGraph:
         # and use them to eliminate all vertices not a finite distance from the
         # frame.
         ranks = self.rank_vertices(frame)
-        graph_terms = set(term for term in self.vertices if ranks[term] != -1)
+        graph_terms = {term for term in self.vertices if ranks[term] != -1}
 
         all_terms = graph_terms | frame_terms
         new_terms = all_terms - frame_terms
-        new_english_terms = set(
+        new_english_terms = {
             term for term in new_terms if get_uri_language(term) == 'en'
-        )
+        }
+
         new_non_english_terms = new_terms - new_english_terms
 
         combined_index = pd.Index(
@@ -277,12 +273,11 @@ class ConceptNetRandomTestGraph:
                     rows.append(combined_index.get_loc(left))
                     cols.append(combined_index.get_loc(right))
 
-        adjacency_matrix = sparse.coo_matrix(
+        return sparse.coo_matrix(
             (values, (rows, cols)),
             shape=(len(combined_index), len(combined_index)),
             dtype=np.int8,
         ).tocsr()
-        return adjacency_matrix
 
     def rank_vertices(self, frame):
         """
@@ -415,23 +410,20 @@ def single_test_adjacency_matrix():
             right = combined_index[i_right]
             is_edge = (left, right) in EDGE_SET
             entry = adjacency_matrix[i_left, i_right]
-            assert (entry == 0) or (
-                entry == 1
-            ), 'Invalid entry {} in adjacency matrix at row {} ({}) and column {} ({}).'.format(
-                entry, i_left, left, i_right, right
-            )
+            assert entry in [
+                0,
+                1,
+            ], f'Invalid entry {entry} in adjacency matrix at row {i_left} ({left}) and column {i_right} ({right}).'
+
             if (left, right) in EDGE_SET:
                 assert (
                     entry == 1
-                ), 'Edge between {} (row {}) and {} (column {}) missing in adjacency matrix.'.format(
-                    left, i_left, right, i_right
-                )
+                ), f'Edge between {left} (row {i_left}) and {right} (column {i_right}) missing in adjacency matrix.'
+
             else:
                 assert (
                     entry == 0
-                ), 'Adjacency matrix incorrectly indicates an edge between {} (row {}) and {} (column {}).'.format(
-                    left, i_left, right, i_right
-                )
+                ), f'Adjacency matrix incorrectly indicates an edge between {left} (row {i_left}) and {right} (column {i_right}).'
 
 
 @do_setup(setup_combined_index, teardown_all)
@@ -464,9 +456,8 @@ def single_test_combined_index():
     # their number must be reported correctly.
     assert n_new_english == len(
         NEW_ENGLISH_TERMS
-    ), 'Incorrect number {} (should be {}) of new terms from the association graph in English.'.format(
-        n_new_english, len(NEW_ENGLISH_TERMS)
-    )
+    ), f'Incorrect number {n_new_english} (should be {len(NEW_ENGLISH_TERMS)}) of new terms from the association graph in English.'
+
     n_new_non_english = len(NEW_NON_ENGLISH_TERMS)
     assert (
         set(combined_index[n_frame_terms : (n_frame_terms + n_new_non_english)])
@@ -489,9 +480,8 @@ def single_test_propagate():
     # term from the graph that is not in English.
     assert len(propagated) == len(FRAME) + len(
         NEW_NON_ENGLISH_TERMS
-    ), 'Incorrect number {} (should be {}) of propagated terms.'.format(
-        len(propagated), len(FRAME) + len(NEW_NON_ENGLISH_TERMS)
-    )
+    ), f'Incorrect number {len(propagated)} (should be {len(FRAME) + len(NEW_NON_ENGLISH_TERMS)}) of propagated terms.'
+
     for i_term in range(len(propagated)):
         assert (
             propagated.index[i_term] == COMBINED_INDEX[i_term]
@@ -521,7 +511,7 @@ def single_test_propagate():
             assert_allclose(
                 propagated.loc[term],
                 sum / count,
-                err_msg='Incorrect propagated vector for term {}'.format(term),
+                err_msg=f'Incorrect propagated vector for term {term}',
             )
 
 
@@ -563,16 +553,16 @@ def single_test_sharded_propagate():
     fname_arg = 1  # filename is 2nd arg to save_hdf.
     assert (
         len(shard_collector.call_args_list) == nshards
-    ), 'Incorrect number {} (should be {}) of shards written.'.format(
-        len(shard_collector.call_args_list), nshards
-    )
+    ), f'Incorrect number {len(shard_collector.call_args_list)} (should be {nshards}) of shards written.'
+
     for i_shard in range(nshards):
         # Get the positional argument in the filename position of the (i_shard)-th
         # call to the shard_collector Mock object (which mocks save_hdf).
         filename = extract_positional_arg(shard_collector, i_shard, fname_arg)
-        assert filename == 'shard_filename_root.shard{}'.format(
-            i_shard
-        ), 'Shard {} written to incorrect file name {}.'.format(i_shard, filename)
+        assert (
+            filename == f'shard_filename_root.shard{i_shard}'
+        ), f'Shard {i_shard} written to incorrect file name {filename}.'
+
 
     # The shards should agree with the appropriate pieces of the unsharded output.
     for i_shard in range(nshards):
@@ -584,19 +574,17 @@ def single_test_sharded_propagate():
         shard_end_dim = shard_start_dim + EMBEDDING_DIM // nshards
         assert len(shard.index) == len(
             propagated.index
-        ), 'Shard {} has incorrect length {} (should be {}).'.format(
-            i_shard, len(shard.index), len(propagated.index)
-        )
+        ), f'Shard {i_shard} has incorrect length {len(shard.index)} (should be {len(propagated.index)}).'
+
         for shard_term, ref_term in zip(shard.index, propagated.index):
             assert (
                 shard_term == ref_term
-            ), 'Shard {} has term {} where reference has {}.'.format(
-                i_shard, shard_term, ref_term
-            )
+            ), f'Shard {i_shard} has term {shard_term} where reference has {ref_term}.'
+
         assert_allclose(
             shard.values,
             propagated.values[:, shard_start_dim:shard_end_dim],
-            err_msg='Shard {} has incorrect propagated vectors.'.format(i_shard),
+            err_msg=f'Shard {i_shard} has incorrect propagated vectors.',
         )
 
 
@@ -605,12 +593,12 @@ def single_test_sharded_propagate():
 
 
 def test_adjacency_matrix():
-    for i_test in range(N_TRIALS):
+    for _ in range(N_TRIALS):
         single_test_adjacency_matrix()
 
 
 def test_combined_index():
-    for i_test in range(N_TRIALS):
+    for _ in range(N_TRIALS):
         single_test_combined_index()
 
 
@@ -622,15 +610,15 @@ def test_propagate():
     # in the propagation output and so their neighbors' values cannot
     # necessarily be computed just from the propagation output.)
     global LANGUAGES
-    for i_test in range(N_TRIALS):
+    for _ in range(N_TRIALS):
         single_test_propagate()
     saved_languages = LANGUAGES
     LANGUAGES = NON_ENGLISH_LANGUAGES
-    for i_test in range(N_TRIALS):
+    for _ in range(N_TRIALS):
         single_test_propagate()
     LANGUAGES = saved_languages
 
 
 def test_sharded_propagate():
-    for i_test in range(N_TRIALS):
+    for _ in range(N_TRIALS):
         single_test_sharded_propagate()

@@ -373,7 +373,7 @@ def read_ws353_multilingual(language):
     lang1, lang2 = language, language
     if language == 'es':
         language = 'es.fixed'
-    filename = 'wordsim-353/{}.tab'.format(language)
+    filename = f'wordsim-353/{language}.tab'
     with open(get_support_data_filename(filename)) as file:
         for line in file:
             term1, term2, sscore = line.split('\t')
@@ -385,7 +385,7 @@ def read_gurevych(setname):
     # The 'setname' here is a number indicating the number of word pairs
     # in the set.
     lang1, lang2 = 'de', 'de'
-    filename = 'gurevych/wortpaare{}.gold.pos.txt'.format(setname)
+    filename = f'gurevych/wortpaare{setname}.gold.pos.txt'
     with open(get_support_data_filename(filename)) as file:
         for line in file:
             if line.startswith('#'):
@@ -435,9 +435,7 @@ def read_men3000(subset='dev'):
     as more related compared to another randomly chosen pair.
     """
     lang1, lang2 = 'en', 'en'
-    filename = get_support_data_filename(
-        'mensim/MEN_dataset_lemma_form.{}'.format(subset)
-    )
+    filename = get_support_data_filename(f'mensim/MEN_dataset_lemma_form.{subset}')
     with open(filename) as file:
         for line in file:
             parts = line.rstrip().split()
@@ -464,7 +462,7 @@ def read_rw(subset='dev'):
     Parses the rare word similarity test collection.
     """
     lang1, lang2 = 'en', 'en'
-    filename = get_support_data_filename('rw/rw-{}.csv'.format(subset))
+    filename = get_support_data_filename(f'rw/rw-{subset}.csv')
     with open(filename) as file:
         for line in file:
             parts = line.split()
@@ -479,8 +477,9 @@ def read_jsim():
     lang1, lang2 = 'ja', 'ja'
     for pos in ('noun', 'verb', 'adj', 'adv'):
         filename = get_support_data_filename(
-            'jSIM/similarity_full/score_{}_new_full.csv'.format(pos)
+            f'jSIM/similarity_full/score_{pos}_new_full.csv'
         )
+
         with open(filename, encoding='utf-8') as file:
             for line in file:
                 if line.startswith('word1'):
@@ -505,7 +504,7 @@ def read_semeval_monolingual(lang, subset='test'):
     Parses Semeval2017-Task2 monolingual word similarity (subtask 1) test collection.
     """
     lang1, lang2 = lang, lang
-    filename = get_support_data_filename('semeval17-2/{}.{}.txt'.format(lang, subset))
+    filename = get_support_data_filename(f'semeval17-2/{lang}.{subset}.txt')
     with open(filename) as file:
         for line in file:
             parts = line.split('\t')
@@ -517,8 +516,9 @@ def read_semeval_crosslingual(lang1, lang2, subset='test'):
     Parses Semeval2017-Task2 crosslingual word similarity (Subtask2) test collection.
     """
     filename = get_support_data_filename(
-        'semeval17-2/{}-{}.{}.txt'.format(lang1, lang2, subset)
+        f'semeval17-2/{lang1}-{lang2}.{subset}.txt'
     )
+
 
     with open(filename) as file:
         for line in file:
@@ -557,8 +557,7 @@ def evaluate_semeval_monolingual(vectors, lang):
     pearson_score = measure_correlation(
         pearsonr, vectors, read_semeval_monolingual(lang)
     )
-    score = compute_semeval_score(spearman_score, pearson_score)
-    return score
+    return compute_semeval_score(spearman_score, pearson_score)
 
 
 def evaluate_semeval_crosslingual(vectors, lang1, lang2):
@@ -571,8 +570,7 @@ def evaluate_semeval_crosslingual(vectors, lang1, lang2):
     pearson_score = measure_correlation(
         pearsonr, vectors, read_semeval_crosslingual(lang1, lang2)
     )
-    score = compute_semeval_score(spearman_score, pearson_score)
-    return score
+    return compute_semeval_score(spearman_score, pearson_score)
 
 
 def evaluate_semeval_monolingual_global(vectors):
@@ -587,8 +585,9 @@ def evaluate_semeval_monolingual_global(vectors):
         scores.append(score)
 
     top_scores = sorted(
-        scores, key=lambda x: x['acc'] if not np.isnan(x['acc']) else 0
+        scores, key=lambda x: 0 if np.isnan(x['acc']) else x['acc']
     )[-4:]
+
     acc_average = tmean([score['acc'] for score in top_scores])
     low_average = tmean([score['low'] for score in top_scores])
     high_average = tmean([score['high'] for score in top_scores])
@@ -610,8 +609,9 @@ def evaluate_semeval_crosslingual_global(vectors):
         scores.append(score)
 
     top_scores = sorted(
-        scores, key=lambda x: x['acc'] if not np.isnan(x['acc']) else 0
+        scores, key=lambda x: 0 if np.isnan(x['acc']) else x['acc']
     )[-6:]
+
     acc_average = tmean([score['acc'] for score in top_scores])
     low_average = tmean([score['low'] for score in top_scores])
     high_average = tmean([score['high'] for score in top_scores])
@@ -649,7 +649,7 @@ def measure_correlation(correlation_function, vectors, standard, verbose=0):
     correlation = correlation_function(np.array(gold_scores), np.array(our_scores))[0]
 
     if verbose:
-        print("Correlation: %s" % (correlation,))
+        print(f"Correlation: {correlation}")
 
     return confidence_interval(correlation, len(gold_scores))
 
@@ -662,11 +662,7 @@ def evaluate(frame, subset='dev', semeval_scope='global'):
 
     Return a Series containing these labeled results.
     """
-    if subset == 'all':
-        men_subset = 'test'
-    else:
-        men_subset = subset
-
+    men_subset = 'test' if subset == 'all' else subset
     vectors = VectorSpaceWrapper(frame=frame)
 
     men_score = measure_correlation(spearmanr, vectors, read_men3000(men_subset))
@@ -702,14 +698,16 @@ def evaluate(frame, subset='dev', semeval_scope='global'):
         languages = ['en', 'de', 'es', 'it', 'fa']
 
         for lang in languages:
-            results.loc['semeval-2a-{}'.format(lang)] = evaluate_semeval_monolingual(
+            results.loc[f'semeval-2a-{lang}'] = evaluate_semeval_monolingual(
                 vectors, lang
             )
 
+
         for lang1, lang2 in combinations(languages, 2):
             results.loc[
-                'semeval-2b-{}-{}'.format(lang1, lang2)
+                f'semeval-2b-{lang1}-{lang2}'
             ] = evaluate_semeval_crosslingual(vectors, lang1, lang2)
+
 
     return results
 
@@ -755,14 +753,16 @@ def evaluate_raw(frame, subset='dev', semeval_scope='global'):
         languages = ['en', 'de', 'es', 'it', 'fa']
 
         for lang in languages:
-            results.loc['semeval-2a-{}'.format(lang)] = evaluate_semeval_monolingual(
+            results.loc[f'semeval-2a-{lang}'] = evaluate_semeval_monolingual(
                 frame, lang
             )
 
+
         for lang1, lang2 in combinations(languages, 2):
             results.loc[
-                'semeval-2b-{}-{}'.format(lang1, lang2)
+                f'semeval-2b-{lang1}-{lang2}'
             ] = evaluate_semeval_crosslingual(frame, lang1, lang2)
+
     return results
 
 

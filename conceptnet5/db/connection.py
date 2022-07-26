@@ -13,11 +13,9 @@ def get_db_connection(dbname=None):
     """
     if dbname is None:
         dbname = config.DB_NAME
-    if dbname in _CONNECTIONS:
-        return _CONNECTIONS[dbname]
-    else:
+    if dbname not in _CONNECTIONS:
         _CONNECTIONS[dbname] = _get_db_connection_inner(dbname)
-        return _CONNECTIONS[dbname]
+    return _CONNECTIONS[dbname]
 
 
 def _get_db_connection_inner(dbname):

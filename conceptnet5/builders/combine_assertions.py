@@ -86,27 +86,27 @@ class Blocklist:
         side matches a derivation block. If so, add its left side as a simple
         block and a derivation block.
         """
-        if edge['rel'].endswith('DerivedFrom') or edge['rel'].endswith('FormOf'):
-            if set(uri_prefixes(edge['end'])) & self.derivation_blocks:
-                prefix = uri_prefix(edge['start'], 3)
-                self.simple_blocks.add(prefix)
-                self.derivation_blocks.add(prefix)
-                if verbose:
-                    print(f"Added derivation block: {prefix}")
+        if (
+            edge['rel'].endswith('DerivedFrom') or edge['rel'].endswith('FormOf')
+        ) and set(uri_prefixes(edge['end'])) & self.derivation_blocks:
+            prefix = uri_prefix(edge['start'], 3)
+            self.simple_blocks.add(prefix)
+            self.derivation_blocks.add(prefix)
+            if verbose:
+                print(f"Added derivation block: {prefix}")
 
     def is_blocked(self, edge):
         """
         Test whether an edge should be blocked (whether any of its string values
         match a simple block).
         """
-        edge_values = set(
-            [
-                prefix
-                for value in edge.values()
-                if isinstance(value, str)
-                for prefix in uri_prefixes(value)
-            ]
-        )
+        edge_values = {
+            prefix
+            for value in edge.values()
+            if isinstance(value, str)
+            for prefix in uri_prefixes(value)
+        }
+
         return bool(edge_values & self.simple_blocks)
 
 
@@ -217,7 +217,7 @@ def combine_assertions(input_filename, core_filename, output_filename):
         return line.split('\t', 1)[0]
 
     out = MsgpackStreamWriter(output_filename)
-    out_bad = MsgpackStreamWriter(output_filename + '.reject')
+    out_bad = MsgpackStreamWriter(f'{output_filename}.reject')
 
     core_prefixes = set()
     for line in open(core_filename, encoding='utf-8'):

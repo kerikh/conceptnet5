@@ -14,17 +14,23 @@ if sys.version_info.major < 3:
 
 
 setup(
-    name = 'conceptnet-web',
-    version = version_str,
-    description = 'Runs the Web site and API for ConceptNet',
-    author = "Robyn Speer",
-    author_email = 'rspeer@luminoso.com',
+    name='conceptnet-web',
+    version=version_str,
+    description='Runs the Web site and API for ConceptNet',
+    author="Robyn Speer",
+    author_email='rspeer@luminoso.com',
     packages=packages,
     include_package_data=True,
     install_requires=[
-        'conceptnet >= %s' % version_str,
-        'limits', 'flask >= 0.12.3', 'flask-cors', 'flask-limiter',
-        'langcodes >= 2.1', 'jinja2-highlight', 'pygments', 'raven[flask] >= 6.6'
+        f'conceptnet >= {version_str}',
+        'limits',
+        'flask >= 0.12.3',
+        'flask-cors',
+        'flask-limiter',
+        'langcodes >= 2.1',
+        'jinja2-highlight',
+        'pygments',
+        'raven[flask] >= 6.6',
     ],
-    license = 'Apache License 2.0',
+    license='Apache License 2.0',
 )

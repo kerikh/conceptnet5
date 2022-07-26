@@ -167,10 +167,7 @@ class AssertionFinder(object):
             # given URI, take the longer one, which is either a more specific
             # sense or a different, longer word.
             shorter, longer = sorted([data['start'], data['end']], key=len)
-            if shorter.startswith(uri):
-                data['other'] = longer
-            else:
-                data['other'] = shorter
+            data['other'] = longer if shorter.startswith(uri) else shorter
             return data
 
         cursor = self.connection.cursor()
@@ -193,8 +190,7 @@ class AssertionFinder(object):
             self.connection = get_db_connection(self.dbname)
         cursor = self.connection.cursor()
         cursor.execute("SELECT data FROM edges WHERE uri=%(uri)s", {'uri': uri})
-        results = [transform_for_linked_data(data) for (data,) in cursor.fetchall()]
-        return results
+        return [transform_for_linked_data(data) for (data,) in cursor.fetchall()]
 
     def random_edges(self, limit=20):
         """
@@ -221,10 +217,10 @@ class AssertionFinder(object):
 
         cursor = self.connection.cursor()
         cursor.execute(random_query, {'limit': limit})
-        results = [
-            transform_for_linked_data(data) for uri, data, weight in cursor.fetchall()
+        return [
+            transform_for_linked_data(data)
+            for uri, data, weight in cursor.fetchall()
         ]
-        return results
 
     def query(self, criteria, limit=20, offset=0):
         """
@@ -253,7 +249,7 @@ class AssertionFinder(object):
                 {'query': jsonify(query), 'limit': limit, 'offset': offset},
             )
 
-        results = [
-            transform_for_linked_data(data) for uri, data, weight in cursor.fetchall()
+        return [
+            transform_for_linked_data(data)
+            for uri, data, weight in cursor.fetchall()
         ]
-        return results

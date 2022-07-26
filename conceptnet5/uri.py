@@ -50,8 +50,7 @@ def join_uri(*pieces):
     >>> join_uri('/test', '/more/')
     '/test/more'
     """
-    joined = '/' + ('/'.join([piece.strip('/') for piece in pieces]))
-    return joined
+    return '/' + ('/'.join([piece.strip('/') for piece in pieces]))
 
 
 def concept_uri(lang, text, *more):
@@ -89,7 +88,7 @@ def concept_uri(lang, text, *more):
     AssertionError: 'this is wrong' is not in normalized form
     """
     assert ' ' not in text, "%r is not in normalized form" % text
-    if len(more) > 0:
+    if more:
         if len(more[0]) != 1:
             # We misparsed a part of speech; everything after the text is
             # probably junk
@@ -121,9 +120,8 @@ def compound_uri(op, args):
     >>> compound_uri('/a', ['/r/CapableOf', '/c/en/cat', '/c/en/sleep'])
     '/a/[/r/CapableOf/,/c/en/cat/,/c/en/sleep/]'
     """
-    items = [op]
     first_item = True
-    items.append('[')
+    items = [op, '[']
     for arg in args:
         if first_item:
             first_item = False
@@ -146,9 +144,7 @@ def split_uri(uri):
     if not uri.startswith('/'):
         return [uri]
     uri2 = uri.lstrip('/')
-    if not uri2:
-        return []
-    return uri2.split('/')
+    return uri2.split('/') if uri2 else []
 
 
 def uri_prefix(uri, max_pieces=3):
@@ -202,9 +198,10 @@ def uri_prefixes(uri, min_pieces=2):
     prefixes = []
     for piece in split_uri(uri):
         pieces.append(piece)
-        if len(pieces) >= min_pieces:
-            if pieces.count('[') == pieces.count(']'):
-                prefixes.append(join_uri(*pieces))
+        if len(pieces) >= min_pieces and pieces.count('[') == pieces.count(
+            ']'
+        ):
+            prefixes.append(join_uri(*pieces))
     return prefixes
 
 
@@ -267,10 +264,7 @@ def parse_possible_compound_uri(op, uri):
     >>> parse_possible_compound_uri('or', '/s/contributor/omcs/dev')
     ['/s/contributor/omcs/dev']
     """
-    if uri.startswith('/' + op + '/'):
-        return parse_compound_uri(uri)[1]
-    else:
-        return [uri]
+    return parse_compound_uri(uri)[1] if uri.startswith(f'/{op}/') else [uri]
 
 
 def conjunction_uri(*sources):
@@ -284,7 +278,7 @@ def conjunction_uri(*sources):
     >>> conjunction_uri('/s/rule/some_kind_of_parser', '/s/contributor/omcs/dev')
     '/and/[/s/contributor/omcs/dev/,/s/rule/some_kind_of_parser/]'
     """
-    if len(sources) == 0:
+    if not sources:
         # Logically, a conjunction with 0 inputs represents 'True', a
         # proposition that cannot be denied. This could be useful as a
         # justification for, say, mathematical axioms, but when it comes to

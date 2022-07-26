@@ -110,10 +110,7 @@ class VectorSpaceWrapper(object):
 
     @staticmethod
     def passes_filter(label, filter):
-        if filter is None:
-            return True
-        else:
-            return field_match(label, filter)
+        return True if filter is None else field_match(label, filter)
 
     @staticmethod
     def _englishify(term):
@@ -125,26 +122,24 @@ class VectorSpaceWrapper(object):
         if not term.startswith('/c/'):
             return None
         if len(splits) > 2:
-            englishified = '/c/en/' + splits[2]
-            return englishified
+            return '/c/en/' + splits[2]
 
     def _match_prefix(self, term, prefix_weight):
         results = []
-        while term:
-            # Skip excessively general lookups, for either an entire
-            # language, or all terms starting with a single
-            # non-ideographic letter
-            if (
+        while term and not (
+            (
                 len(split_uri(term)) < 3
                 or term.endswith('/')
                 or (term[-2] == '/' and term[-1] < chr(0x3000))
-            ):
-                break
-            prefixed = self._terms_with_prefix(term)
-            if prefixed:
+            )
+        ):
+            if prefixed := self._terms_with_prefix(term):
                 n_prefixed = len(prefixed)
-                for prefixed_term in prefixed:
-                    results.append((prefixed_term, prefix_weight / n_prefixed))
+                results.extend(
+                    (prefixed_term, prefix_weight / n_prefixed)
+                    for prefixed_term in prefixed
+                )
+
                 break
             term = term[:-1]
         return results
@@ -216,7 +211,7 @@ class VectorSpaceWrapper(object):
 
         if isinstance(query, np.ndarray):
             return query
-        elif isinstance(query, pd.Series) or isinstance(query, dict):
+        elif isinstance(query, (pd.Series, dict)):
             terms = list(query.items())
         elif isinstance(query, pd.DataFrame):
             terms = list(query.to_records())
@@ -267,7 +262,7 @@ class VectorSpaceWrapper(object):
                     idx = search_frame.index.get_loc(filter)
                     search_frame = search_frame[idx : idx + 1]
                 else:
-                    search_frame = search_frame.iloc[0:0]
+                    search_frame = search_frame.iloc[:0]
             else:
                 start_idx, end_idx = self._index_prefix_range(filter + '/')
                 search_frame = search_frame.iloc[start_idx:end_idx]
@@ -276,8 +271,7 @@ class VectorSpaceWrapper(object):
             self.frame.loc[similar_sloppy.index].astype('f')
         )
 
-        similar = similar_to_vec(similar_choices, vec, limit=limit)
-        return similar
+        return similar_to_vec(similar_choices, vec, limit=limit)
 
     def get_similarity(self, query1, query2):
         vec1 = self.get_vector(query1)

@@ -134,20 +134,16 @@ def translate_dbpedia_url(url):
         domain = 'en.dbpedia.org'
 
     domain_parts = domain.split('.', 1)
-    if domain_parts[1] == 'dbpedia.org':
-        lang = domain_parts[0]
-        if lang in LCODE_ALIASES:
-            lang = LCODE_ALIASES[lang]
-        if lang not in ALL_LANGUAGES:
-            return None
-        text = resource_name(url).replace('_', ' ')
-        uri = topic_to_concept(lang, text)
-        if uri in CONCEPT_BLACKLIST:
-            return None
-        else:
-            return uri
-    else:
+    if domain_parts[1] != 'dbpedia.org':
         return None
+    lang = domain_parts[0]
+    if lang in LCODE_ALIASES:
+        lang = LCODE_ALIASES[lang]
+    if lang not in ALL_LANGUAGES:
+        return None
+    text = resource_name(url).replace('_', ' ')
+    uri = topic_to_concept(lang, text)
+    return None if uri in CONCEPT_BLACKLIST else uri
 
 
 def map_dbpedia_relation(url):
@@ -164,10 +160,7 @@ def map_dbpedia_relation(url):
     '/r/dbpedia/genre'
     """
     name = resource_name(url)
-    if name in RELATIONS:
-        return RELATIONS[name]
-    else:
-        return None
+    return RELATIONS[name] if name in RELATIONS else None
 
 
 def read_concept_file(concept_file):
@@ -198,7 +191,6 @@ def interlanguage_mapping(interlang_path, ok_concepts):
                 or 'series' in sense
                 or 'disambiguation' in sense
                 or 'song' in sense
-                or 'album' in sense
                 or 'band' in sense
             ):
                 continue
@@ -276,35 +268,33 @@ def process_dbpedia(input_dir, output_file, concept_file):
                             weight=1.0,
                         )
                         out.write(urledge)
-                    else:
-                        other_concept = translate_dbpedia_url(other_url)
-                        if other_concept:
-                            urledge = make_edge(
-                                '/r/ExternalURL',
-                                other_concept,
-                                other_url,
-                                dataset='/d/dbpedia/en',
-                                license=Licenses.cc_sharealike,
-                                sources=[
-                                    {'contributor': '/s/resource/dbpedia/2015/en'}
-                                ],
-                                weight=1.0,
-                            )
-                            out.write(urledge)
-                            edge = make_edge(
-                                '/r/Synonym',
-                                other_concept,
-                                subj_concept,
-                                dataset='/d/dbpedia/en',
-                                license=Licenses.cc_sharealike,
-                                sources=[
-                                    {'contributor': '/s/resource/dbpedia/2015/en'}
-                                ],
-                                weight=0.5,
-                                surfaceStart=url_to_label(other_url),
-                                surfaceEnd=url_to_label(subj_url),
-                            )
-                            out.write(edge)
+                    elif other_concept := translate_dbpedia_url(other_url):
+                        urledge = make_edge(
+                            '/r/ExternalURL',
+                            other_concept,
+                            other_url,
+                            dataset='/d/dbpedia/en',
+                            license=Licenses.cc_sharealike,
+                            sources=[
+                                {'contributor': '/s/resource/dbpedia/2015/en'}
+                            ],
+                            weight=1.0,
+                        )
+                        out.write(urledge)
+                        edge = make_edge(
+                            '/r/Synonym',
+                            other_concept,
+                            subj_concept,
+                            dataset='/d/dbpedia/en',
+                            license=Licenses.cc_sharealike,
+                            sources=[
+                                {'contributor': '/s/resource/dbpedia/2015/en'}
+                            ],
+                            weight=0.5,
+                            surfaceStart=url_to_label(other_url),
+                            surfaceEnd=url_to_label(subj_url),
+                        )
+                        out.write(edge)
 
     relations_path = input_path / 'mappingbased_objects_en.tql.bz2'
     quads = parse_nquads(bz2.open(str(relations_path), 'rt'))
@@ -317,20 +307,19 @@ def process_dbpedia(input_dir, output_file, concept_file):
             and obj_concept
             and subj['url'] in mapped_urls
             and obj['url'] in mapped_urls
-        ):
-            if rel_name in RELATIONS:
-                rel = RELATIONS[rel_name]
-                edge = make_edge(
-                    rel,
-                    subj_concept,
-                    obj_concept,
-                    dataset='/d/dbpedia/en',
-                    license=Licenses.cc_sharealike,
-                    sources=[{'contributor': '/s/resource/dbpedia/2015/en'}],
-                    weight=0.5,
-                    surfaceStart=url_to_label(subj['url']),
-                    surfaceEnd=url_to_label(obj['url']),
-                )
-                out.write(edge)
+        ) and rel_name in RELATIONS:
+            rel = RELATIONS[rel_name]
+            edge = make_edge(
+                rel,
+                subj_concept,
+                obj_concept,
+                dataset='/d/dbpedia/en',
+                license=Licenses.cc_sharealike,
+                sources=[{'contributor': '/s/resource/dbpedia/2015/en'}],
+                weight=0.5,
+                surfaceStart=url_to_label(subj['url']),
+                surfaceEnd=url_to_label(obj['url']),
+            )
+            out.write(edge)
 
     out.close()

@@ -337,12 +337,12 @@ def can_skip(parts_dict):
         return True
     if parts_dict["activity"] in ACTIVITY_BLACKLIST:
         return True
-    if not (
-        valid_concept_name(parts_dict["startText"])
-        and valid_concept_name(parts_dict["endText"])
-    ):
-        return True
-    return False
+    return not (
+        (
+            valid_concept_name(parts_dict["startText"])
+            and valid_concept_name(parts_dict["endText"])
+        )
+    )
 
 
 # TODO: this should be combined with 'can_skip'
@@ -374,7 +374,7 @@ def build_frame_text(parts_dict):
     frame_text = parts_dict["frame_text"]
     # Mark frames where {2} precedes {1} with an asterisk.
     if frame_text.find('{1}') > frame_text.find('{2}'):
-        frame_text = '*' + frame_text
+        frame_text = f'*{frame_text}'
     polarity = parts_dict["polarity"]
 
     # If this is a negative frame, then it should either have the negative
@@ -384,9 +384,10 @@ def build_frame_text(parts_dict):
         frame_text = frame_text.replace('{%}', '')
     else:
         frame_text = frame_text.replace('{%}', 'not ')
-    frame_text = frame_text.replace('{1}', '[[%s]]' % parts_dict["startText"]).replace(
-        '{2}', '[[%s]]' % parts_dict["endText"]
-    )
+    frame_text = frame_text.replace(
+        '{1}', f'[[{parts_dict["startText"]}]]'
+    ).replace('{2}', f'[[{parts_dict["endText"]}]]')
+
     return frame_text
 
 
@@ -401,12 +402,11 @@ def build_relation(parts_dict):
     if relname == 'ConceptuallyRelatedTo':
         relname = 'RelatedTo'
 
-    if polarity > 0:
-        relation = join_uri('/r', relname)
-    else:
-        relation = join_uri('/r', 'Not' + relname)
-
-    return relation
+    return (
+        join_uri('/r', relname)
+        if polarity > 0
+        else join_uri('/r', f'Not{relname}')
+    )
 
 
 def filtered_uri(lang, text):
@@ -417,30 +417,24 @@ def filtered_uri(lang, text):
 
 def filter_stopwords(text):
     words = [word for word in simple_tokenize(text) if word not in MORE_STOPWORDS]
-    text2 = ' '.join(words)
-    if not text2:
-        text2 = text
-    return text2
+    return ' '.join(words) or text
 
 
 def build_start(parts_dict):
     lang = parts_dict['lang']
     startText = parts_dict["startText"]
-    start = filtered_uri(lang, startText)
-    return start
+    return filtered_uri(lang, startText)
 
 
 def build_end(parts_dict):
     lang = parts_dict['lang']
     endText = parts_dict["endText"]
-    end = filtered_uri(lang, endText)
-    return end
+    return filtered_uri(lang, endText)
 
 
 def build_data_set(parts_dict):
     lang = parts_dict['lang']
-    dataset = join_uri('/d/conceptnet/4', lang)
-    return dataset
+    return join_uri('/d/conceptnet/4', lang)
 
 
 def standardize_username(username):
@@ -463,12 +457,10 @@ def build_sources(parts_dict, preposition_fix=False):
     inside the 'make_edge' function, these will be combined into an '/and'
     node.
     """
-    creator_source = {}
     creator_node = join_uri(
         '/s/contributor/omcs', standardize_username(parts_dict["creator"])
     )
-    creator_source['contributor'] = creator_node
-
+    creator_source = {'contributor': creator_node}
     activity = parts_dict["activity"]
     activity = '_'.join(simple_tokenize(activity.replace('_', ' ')))
     activity_node = join_uri('/s/activity/omcs', activity)
@@ -527,7 +519,7 @@ class CN4Builder(object):
         preposition_fix = False
         if '} around {' in parts_dict['frame_text']:
             for prep in AROUND_PREPOSITIONS:
-                if parts_dict['endText'].startswith(prep + ' '):
+                if parts_dict['endText'].startswith(f'{prep} '):
                     parts_dict['endText'] = parts_dict['endText'][len(prep) + 1 :]
                     replacement = '} %s {' % prep
                     parts_dict['frame_text'] = parts_dict['frame_text'].replace(

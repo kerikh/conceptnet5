@@ -58,7 +58,7 @@ def encode_url(url):
     >>> encode_url('http://dbpedia.org/resource/Núria_Espert')
     '<http://dbpedia.org/resource/N%C3%BAria_Espert>'
     """
-    return '<%s>' % safe_quote(url)
+    return f'<{safe_quote(url)}>'
 
 
 def resource_name(url):
@@ -80,12 +80,12 @@ def resource_name(url):
     parsed = urlsplit(decode_url(url))
     if parsed.fragment:
         return parsed.fragment
-    else:
-        path = parsed.path.strip('/')
-        if '/resource/' in path:
-            return path.split('/resource/')[-1]
-        else:
-            return path.split('/')[-1]
+    path = parsed.path.strip('/')
+    return (
+        path.split('/resource/')[-1]
+        if '/resource/' in path
+        else path.split('/')[-1]
+    )
 
 
 NQUADS_ITEM_RE = re.compile(
@@ -148,7 +148,7 @@ def parse_nquads_line(line):
     if len(items) == 3:
         items.append({})
     # The line is either empty aside from comments, or contains a quad
-    assert len(items) == 0 or len(items) == 4, line
+    assert len(items) in {0, 4}, line
     return items
 
 
@@ -159,8 +159,6 @@ def parse_nquads(stream):
     `parse_nquads_line`.
     """
     for line in stream:
-        line = line.strip()
-        if line:
-            quad = parse_nquads_line(line)
-            if quad:
+        if line := line.strip():
+            if quad := parse_nquads_line(line):
                 yield quad

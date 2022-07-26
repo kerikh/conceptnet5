@@ -57,6 +57,6 @@ def _assert_result_dir_same_as_reference(result, reference):
 
 def test_build_result(run_build):
     for subdir in ['assertions', 'assoc', 'edges']:
-        result_dir = 'testdata/current/' + subdir
-        reference_dir = 'testdata/reference/' + subdir
+        result_dir = f'testdata/current/{subdir}'
+        reference_dir = f'testdata/reference/{subdir}'
         _assert_result_dir_same_as_reference(result_dir, reference_dir)

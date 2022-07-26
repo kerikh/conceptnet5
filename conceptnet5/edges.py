@@ -55,21 +55,17 @@ def make_edge(
     pstart = uri_prefix(start)
     pend = uri_prefix(end)
     if is_concept(pstart) and is_concept(pend):
-        features = [
-            "%s %s -" % (pstart, rel),
-            "%s - %s" % (pstart, pend),
-            "- %s %s" % (rel, pend),
-        ]
+        features = [f"{pstart} {rel} -", f"{pstart} - {pend}", f"- {rel} {pend}"]
     else:
         features = []
     uri = assertion_uri(rel, start, end)
 
     assert isinstance(sources, list), sources
-    assert all([isinstance(source, dict) for source in sources]), sources
+    assert all(isinstance(source, dict) for source in sources), sources
 
     if surfaceStart is None or surfaceEnd is None:
         surfaceStart, surfaceEnd = extract_surface_terms(surfaceText)
-    obj = {
+    return {
         'uri': uri,
         'rel': rel,
         'start': start,
@@ -83,7 +79,6 @@ def make_edge(
         'surfaceStart': surfaceStart,
         'surfaceEnd': surfaceEnd,
     }
-    return obj
 
 
 SURFACE_FORM_PATTERN = re.compile(r'\[\[(.*?)\]\]')

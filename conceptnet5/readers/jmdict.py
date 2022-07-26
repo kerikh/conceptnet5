@@ -53,9 +53,7 @@ def convert_lang_code(code):
 
 def fix_context(context):
     ending = ' term'
-    if context.endswith(ending):
-        return context[: -len(ending)]
-    return context
+    return context[: -len(ending)] if context.endswith(ending) else context
 
 
 def get_list(node, tag):
@@ -71,10 +69,7 @@ def get_list(node, tag):
     whether it matched 0, 1, or more things.
     """
     subnode = node.get(tag, [])
-    if isinstance(subnode, list):
-        return subnode
-    else:
-        return [subnode]
+    return subnode if isinstance(subnode, list) else [subnode]
 
 
 GLOSS_RE = re.compile(
@@ -91,11 +86,7 @@ GLOSS_RE = re.compile(
 
 
 def parse_gloss(text):
-    matched = GLOSS_RE.match(text)
-    if matched:
-        return matched.group(2).strip()
-    else:
-        return None
+    return matched.group(2).strip() if (matched := GLOSS_RE.match(text)) else None
 
 
 def handle_file(filename, output_file):

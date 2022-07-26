@@ -19,19 +19,21 @@ def handle_raw_assertion(line):
     ftext = fdata['text']
     rel = fdata['relation']
 
-    surfaceText = ftext.replace('{1}', '[[' + concept1 + ']]').replace(
-        '{2}', '[[' + concept2 + ']]'
+    surfaceText = ftext.replace('{1}', f'[[{concept1}]]').replace(
+        '{2}', f'[[{concept2}]]'
     )
+
     # We mark surface texts with * if {2} comes before {1}.
     if ftext.find('{2}') < ftext.find('{1}'):
-        surfaceText = '*' + surfaceText
+        surfaceText = f'*{surfaceText}'
 
     start = standardized_concept_uri('zh_TW', concept1)
     end = standardized_concept_uri('zh_TW', concept2)
     source = {
-        'contributor': '/s/contributor/petgame/' + user,
+        'contributor': f'/s/contributor/petgame/{user}',
         'activity': '/s/activity/ptt/petgame',
     }
+
     yield make_edge(
         rel,
         start,
@@ -47,7 +49,6 @@ def handle_raw_assertion(line):
 def handle_file(input_filename, output_file):
     out = MsgpackStreamWriter(output_file)
     for line in codecs.open(input_filename, encoding='utf-8'):
-        line = line.strip()
-        if line:
+        if line := line.strip():
             for new_obj in handle_raw_assertion(line):
                 out.write(new_obj)
